@@ -26,6 +26,7 @@ Gem::Specification.new do |s|
         'safe_yaml', '~> 0.9.4',
         'grit', '~> 2.5.0',
         'rake', '~> 10.0.3',
+        'rdoc', '~> 4.0.0',
         'commander', '~> 4.1.3',
         'listen', '~> 1.2.3'
     ].each_slice(2) do |a|
