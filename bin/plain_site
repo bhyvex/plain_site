@@ -1,0 +1,64 @@
+#!/usr/bin/env ruby
+# coding:utf-8
+$:.unshift File.join(File.dirname(__FILE__), *%w{ .. lib })
+
+require 'commander/import'
+require 'plain_site'
+require 'plain_site/commands'
+
+program :version, PlainSite::VERSION
+program :description, 'PlainSite - simple static site generator.'
+default_command :help
+
+global_option '-r','--root [DIR]', 'Site root directory (defaults to ./)'
+
+
+
+
+command :init do |c|
+  c.syntax = 'plain_site init [options]'
+  c.summary = 'Init site scaffold.'
+  c.description = 'Init site scaffold,create a _site directory structure and place some examples.'
+  c.example 'Init new site /tmp/site1', 'init --root /tmp/site1'
+  c.option '--override', 'Override existing files (defaults to false)'
+  c.action do |args, options|
+    PlainSite::Commands.run :init,args,options
+  end
+end
+
+
+command :build do |c|
+  c.syntax = 'plain_site build [options]'
+  c.summary = 'Generate all pages.'
+  c.description = 'Generate posts to html pages.'
+  c.option '-d', '--dest [DIR]', 'Destination directory (defaults same as root)'
+  c.option '-a', '--all', 'Force regenerate all pages (defaults to false,only generate updated posts page)'
+  c.action do |args, options|
+    PlainSite::Commands.run :build,args,options
+  end
+end
+
+command :serve do |c|
+  c.syntax = 'plain_site serve [options]'
+  c.summary = 'Run a preview web server.'
+  c.description = 'Run a preview web server on specified host and port'
+  c.option '-h', '--host [HOST]', 'Server host,defaults to 127.0.0.1'
+  c.option '-p', '--port [PORT]', 'Server port,defaults to 1990'
+  c.action do |args, options|
+    PlainSite::Commands.run :serve,args,options
+  end
+end
+
+command :new_post do |c|
+  c.syntax = 'plain_site new_post [data_id] [title]'
+  c.summary = 'Create a new post'
+  c.description = <<DESC
+Create new post,data_id is post's category/slug,created post file's date is today's date,if extname not specified,default is '.md'.
+DESC
+
+  c.example "Create new post file '_site/essay/#{Date.today}-life-is-a-game.md'", 'new_post essay/life-is-a-game'
+
+  c.action do |args, options|
+    PlainSite::Commands.run :new_post,args,options
+  end
+end

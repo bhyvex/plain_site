@@ -1,0 +1,25 @@
+---
+layout: base.html
+---
+
+
+<% content_for :page_title do %>
+    Page <%=display_num %>
+<% end %>
+
+<% content_for :page_content do %>
+    <ul>
+    <% posts.each do |p| %>
+        <li><a href="<%=p.url%>"><%=p.title%></a></li>
+    <% end %>
+    </ul>
+
+    <p>
+        <% all_pages.each do |page| %>
+            <a href="<%=page.url%>"
+             <%=(page.display_num==display_num ? 'class="active"' : '')%> >
+             <%=page.display_num%>
+            </a>
+        <% end %>
+    </p>
+<% end %>

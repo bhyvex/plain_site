@@ -1,0 +1,8 @@
+url: http://example.com/
+name: 'Demo Blog'
+code_highlight:
+    engine: pygments
+    pygments_css: css/pygments.css
+    pygments_style: native
+
+

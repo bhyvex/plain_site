@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title><%=yield :page_title%></title>
+<link rel="stylesheet" type="text/css" href="<%=site.url%>/css/pygments.css" />
+<link rel="stylesheet" type="text/css" href="<%=site.url%>/css/base.css" />
+</head>
+<body>
+    <h1><%=site.name%></h1>
+    <nav>
+        <a href="<%=site.url%>">Home</a>
+        <a href="<%=site.url_for 'about'%>">About</a>
+    </nav>
+    <%=yield :page_content%>
+    <%=include 'footer.html'%>
+</body>
+</html>

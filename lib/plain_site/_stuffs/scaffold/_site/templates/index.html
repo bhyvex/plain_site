@@ -1,0 +1,21 @@
+---
+layout: base.html
+---
+
+
+<% content_for :page_title do %>
+    <%=site.name%>
+<% end %>
+
+<% content_for :page_content do %>
+    <% site.db.subs.each do |cat| %>
+    <section>
+        <h2><a href="<%=URI.join site.url,cat.name%>/index.html"><%=cat.display_name%></h2>
+        <ul>
+            <% cat.posts.take(10).each do |p| %>
+            <li><a href="<%=p.url%>"><%=p.title%></a></li>
+            <% end %>
+        </ul>
+    </section>
+    <% end %>
+<% end %>

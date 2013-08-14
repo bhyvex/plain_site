@@ -1,0 +1,26 @@
+---
+layout: base.html
+---
+
+
+<% content_for :page_title do %>
+	<%=title %>
+<% end %>
+
+<% content_for :page_content do %>
+	<article>
+        <h2><%=title %></h2>
+        <p>Date: <%=date%></p>
+		<div>
+            <%=self.content%>
+        </div>
+	</article>
+    <nav>
+        <% if prev_post %>
+            <a href="<%=prev_post.url%>">Previous post:<%=prev_post.title%></a>
+        <% end %> |
+        <% if next_post %>
+            <a href="<%=next_post.url%>">Next post:<%=next_post.title%></a>
+        <% end %>
+    </nav>
+<% end %>
