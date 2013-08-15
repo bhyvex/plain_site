@@ -26,7 +26,7 @@ module PlainSite
         def initialize(root)
             @root= File.realpath root
             @dest= @root
-            @app_path=File.join(@root,'_site')
+            @app_path=File.join(@root,'_src')
             @posts_path=File.join(@app_path,'posts')
             @routes_rb=File.join(@app_path,'routes.rb')
             @templates_path=File.join(@app_path,'templates')
