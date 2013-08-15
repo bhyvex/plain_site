@@ -28,11 +28,11 @@ end
 
 
 command :build do |c|
-  c.syntax = 'plain_site build [options]'
+  c.syntax = 'plain_site build [options] [includes]'
   c.summary = 'Generate all pages.'
-  c.description = 'Generate posts to html pages.'
+  c.description = 'Generate posts to html pages.Default with git status it will only generate updated posts and templates corresponding pages.If you want to generate specified files.Pass posts or templates file path as includes arguments.'
   c.option '-d', '--dest [DIR]', 'Destination directory (defaults same as root)'
-  c.option '-a', '--all', 'Force regenerate all pages (defaults to false,only generate updated posts page)'
+  c.option '-a', '--all', 'Force regenerate all pages (defaults to false,only generate updated pages)'
   c.action do |args, options|
     PlainSite::Commands.run :build,args,options
   end

@@ -22,8 +22,12 @@ class SiteTest < Test::Unit::TestCase
         site.url=site_url
         assert site.diff_files.nil? ,"Should diff_files be nil"
 
-        to_del_post=site.new_post 'essay/git-test1','Git Test 1'
-        to_mod_post=site.new_post 'essay/git-test3','Git Test 3'
+        to_del_post=site.new_post 'essay/git-delete-test1','Git Test 1'
+        to_mod_post=site.new_post 'essay/git-mod-test2','Git Test 2'
+        includes=[]
+        includes.push (site.new_post 'essay/include-test1','Include Test')
+        includes.push (site.new_post 'essay/include-test2','Include Test')
+        includes.push (site.new_post 'essay/include-test3','Include Test')
 
         `(cd #{@site_root};
         git init;
@@ -39,12 +43,15 @@ class SiteTest < Test::Unit::TestCase
         `(cd #{@site_root};
         git add #{added_template});`
 
-        files=site.diff_files
+
+        files=site.diff_files includes
 
         assert [to_mod_post,new_post].to_set <= files[:updated_posts].to_set ,"Should include new and modified posts"
         assert (files[:deleted_posts].include? to_del_post), "Should include deleted post"
 
         assert (files[:updated_templates].include? added_template), "Should include added template"
+
+        assert includes.to_set <= files[:updated_posts].to_set ,"Should force include includes-posts"
 
 
         site2=Site.new @site_root

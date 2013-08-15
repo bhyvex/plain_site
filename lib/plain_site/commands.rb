@@ -40,7 +40,7 @@ module PlainSite
 
         def self.build(root,args,opts)
             site=Site.new root
-            site.build(dest:opts.dest,all:opts.all)
+            site.build(dest:opts.dest,all:opts.all,includes:args)
             puts 'Posts build finish.'
         end
 

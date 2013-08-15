@@ -114,9 +114,18 @@ module PlainSite
         # Build static pages
         # all - The Boolean value to force build all posts.Default only build updated posts.
         # dest - The String path of destination directory
+        # includes - The String[] path of posts or templates to force regeneration
         def build(opts={})
             @dest= opts[:dest] if opts[:dest]
-            files=diff_files
+            includes= opts[:includes]
+            if includes && ! includes.empty?
+                includes.map! &(File.method :realpath)
+            else
+                includes=nil
+            end
+
+            files=diff_files includes
+
             if opts[:all] || files.nil?
                 render_task.render
             else
@@ -137,15 +146,22 @@ module PlainSite
         #     updated_templates:[],
         #     deleted_posts:[]
         # }
-        def diff_files(since=nil)
+        def diff_files(includes=nil)
             begin
                 repo=Grit::Repo.new @root
+                files=%w(untracked added changed).map {|m|(repo.status.send m).keys}.flatten
+                files.map! {|f|File.join @root,f}
+                deleted_posts=repo.status.deleted.keys.map {|f|File.join @root,f}
+                deleted_posts.select! do |f|
+                    f.start_with? @posts_path
+                end
             rescue Grit::InvalidGitRepositoryError
                 $stderr.puts "\nSite root is not a valid git repository:#{@root}\n"
-                return nil
+                return nil if includes.nil?
             end
-            files=%w(untracked added changed).map {|m|(repo.status.send m).keys}.flatten
-            files=files.map {|f|File.join @root,f}.group_by do |f|
+            files||=[]
+            files.concat includes if includes
+            files=files.group_by do |f|
                 if f.start_with? @posts_path+'/'
                     :updated_posts
                 elsif f.start_with? @templates_path+'/'
@@ -153,12 +169,7 @@ module PlainSite
                 end
             end
             files.delete nil
-
-            deleted_posts=repo.status.deleted.keys.map {|f|File.join @root,f}
-            deleted_posts.select! do |f|
-                f.start_with? @posts_path
-            end
-            files[:deleted_posts]=deleted_posts
+            files[:deleted_posts]=deleted_posts if deleted_posts
             files
         end
 
