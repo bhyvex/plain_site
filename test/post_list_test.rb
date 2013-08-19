@@ -30,9 +30,9 @@ class PostListTest < Test::Unit::TestCase
             end
         end
 
-        pages=site.db / :essay / '*' / 5
+        pages=site.db / :essays / '*' / 5
 
-        assert pages[0].prev_page.nil?,"Should first page's prev_page be nil"
+        assert pages[0].next_page.nil?,"Should first page's next_page be nil"
         assert pages[0].posts.length==5,"Page size should be 5"
         pages[0].posts.each_with_index do |p,i|
             d=Date.new 2014,12-i,22

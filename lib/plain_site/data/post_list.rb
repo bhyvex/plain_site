@@ -33,8 +33,8 @@ module PlainSite::Data
                 else
                     post=@posts[i]
                     if post
-                        post.prev_post= i-1 < 0 ? nil : @posts[i-1]
-                        post.next_post=@posts[i+1]
+                        post.next_post= i-1 < 0 ? nil : @posts[i-1]
+                        post.prev_post=@posts[i+1]
                     end
                     post
                 end
@@ -98,8 +98,8 @@ module PlainSite::Data
                 )
             end
 
-            prev_pages=[nil]+pages[0..-2]
-            next_pages=(pages[1..-1] or [])+[nil]
+            next_pages=[nil]+pages[0..-2]
+            prev_pages=(pages[1..-1] or [])+[nil]
             pages.zip(prev_pages,next_pages) do |a|
                 page,prev_page,next_page=a
                 page.prev_page=prev_page
@@ -132,6 +132,10 @@ module PlainSite::Data
 
         def length
             @posts.length
+        end
+
+        def empty?
+            length==0
         end
 
         def each(&block)

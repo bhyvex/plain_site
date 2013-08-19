@@ -51,8 +51,8 @@ module PlainSite::Data
             @parents=[]
             return @parents if root?
             cat=self
-            while p=cat.parent
-                @parents.push p
+            while cat=cat.parent
+                @parents.unshift cat
             end
             @parents
         end
@@ -72,7 +72,7 @@ module PlainSite::Data
         def [](path)
             path=path.to_s
             if path['/']
-                return path.split('/').reduce(self) {|cat,p|cat[p]}
+                return path.split('/').reduce(self)  {|cat,p| cat && cat[p]}
             end
 
             return posts if path=='*'
@@ -88,7 +88,7 @@ module PlainSite::Data
         def get_post(p)
             if p['.'] # filename
                 post_path=File.join @path,p
-                if File.exists? post_path
+                if File.exists? post_path && File.basename(post_path)[0]!='_'
                     return Post.new post_path,@site
                 end
             end
@@ -102,7 +102,7 @@ module PlainSite::Data
             return @posts if @posts
 
             posts=Dir.glob(@path+'/*')
-            posts.select! { |f| f[0]!='_' && (File.file? f) }
+            posts.select! { |f| File.basename(f)[0]!='_' && (File.file? f) }
 
             return @posts=PostList.new([],@site) if posts.empty?
 
@@ -128,7 +128,7 @@ module PlainSite::Data
         def subs
             return @subs if @subs
             subs=Dir.glob @path+'/*'
-            subs.select! { |d| d[0]!='_' && (File.directory? d) }
+            subs.select! { |d| File.basename(d)[0]!='_' && (File.directory? d) }
             subs.map! { |d| Category.new d,@site }
             @subs=subs
         end

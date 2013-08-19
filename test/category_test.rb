@@ -47,5 +47,12 @@ class CategoryTest < Test::Unit::TestCase
         sub1=cat / 'sub-category1'
         assert sub1.display_name=='Sub category1','Sub category display name'
 
+
+        cats=sub1.to_a
+        assert cats[0].data_id==@site.db.data_id,'First should be root category'
+        assert cats[1].data_id=='category-demo','Second should be category-demo category'
+        assert cats[2].data_id=='category-demo/sub-category1','Third should be sub-category1 category'
+        assert cats[3].nil?,'Fourth should be nil'
+
     end
 end

@@ -2,7 +2,8 @@ url: http://example.com/
 name: 'Demo Blog'
 code_highlight:
     engine: pygments
-    pygments_css: css/pygments.css
-    pygments_style: native
+    pygments_css_list:
+        - [native,css/pygments_native.css]
+        - [default,css/pygments.css]
 
 

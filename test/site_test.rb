@@ -22,12 +22,12 @@ class SiteTest < Test::Unit::TestCase
         site.url=site_url
         assert site.diff_files.nil? ,"Should diff_files be nil"
 
-        to_del_post=site.new_post 'essay/git-delete-test1','Git Test 1'
-        to_mod_post=site.new_post 'essay/git-mod-test2','Git Test 2'
+        to_del_post=site.new_post 'essays/git-delete-test1','Git Test 1'
+        to_mod_post=site.new_post 'essays/git-mod-test2','Git Test 2'
         includes=[]
-        includes.push (site.new_post 'essay/include-test1','Include Test')
-        includes.push (site.new_post 'essay/include-test2','Include Test')
-        includes.push (site.new_post 'essay/include-test3','Include Test')
+        includes.push (site.new_post 'essays/include-test1','Include Test')
+        includes.push (site.new_post 'essays/include-test2','Include Test')
+        includes.push (site.new_post 'essays/include-test3','Include Test')
 
         `(cd #{@site_root};
         git init;
@@ -36,7 +36,7 @@ class SiteTest < Test::Unit::TestCase
 
         FileUtils.rm to_del_post
         File.open(to_mod_post,'wb') {|f| f.write "---\ntitle: Modified\n---\n Modified!"}
-        new_post=site.new_post 'essay/git-untracked','Git Test Untracked'
+        new_post=site.new_post 'essays/git-untracked','Git Test Untracked'
 
         added_template=File.join site.templates_path,'test.html'
         File.open(added_template,'wb') {|f| f.write 'TEST Template'}

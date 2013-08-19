@@ -18,7 +18,7 @@ $site.route(
 
 $site.route(
     url_pattern: '{data_id}.html',
-    data: 'essay/*',
+    data: 'essays/*',
     template: 'post.html'
 )
 

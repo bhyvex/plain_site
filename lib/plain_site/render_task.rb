@@ -44,6 +44,7 @@ module PlainSite
 
             if String===items
                 items=@site.db[items]
+                raise Exception,"Data not found:#{opts[:data]}!" if items.nil?
             end
             items=[items] unless Data::PostList===items || Array===items
 
@@ -127,7 +128,7 @@ module PlainSite
             url=url.dup
             url[0]=''  if url[0]=='/'
             url=url+'index.html' if url.end_with? '/'
-            url=url+'/index.html' unless url.end_with? '.html'
+            url=url+'/index.html' if site.url.start_with? url
             t = @tasks.detect {|t|t[:url]==url}
             if t
                 return render_task t,false
