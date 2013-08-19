@@ -42,7 +42,7 @@ command :serve do |c|
   c.syntax = 'plain_site serve [options]'
   c.summary = 'Run a preview web server.'
   c.description = 'Run a preview web server on specified host and port'
-  c.option '-h', '--host [HOST]', 'Server host,defaults to 127.0.0.1'
+  c.option '--host [HOST]', 'Server host,defaults to 127.0.0.1'
   c.option '-p', '--port [PORT]', 'Server port,defaults to 1990'
   c.action do |args, options|
     PlainSite::Commands.run :serve,args,options

@@ -4,11 +4,12 @@ module PlainSite
     require 'uri'
     require 'fileutils'
     require 'webrick'
+    require 'listen'
     require 'plain_site/data/category'
     require 'plain_site/data/post'
     require 'plain_site/render_task'
     require 'plain_site/utils'
-    require 'listen'
+    require 'plain_site/socket_patch'
 
     class Site
         SELF_DIR=File.realpath File.dirname(__FILE__)
@@ -193,6 +194,7 @@ module PlainSite
             server.mount_proc '/' do |req,res|
                 url= req.path_info
                 url= '/index.html' if url=='/'
+                res.status=404 if url=='/404.html'
                 static_file=File.join @assets_path,url
                 if (File.exists? static_file) && !(File.directory? static_file)
                     serve_static server,static_file,req,res
@@ -200,7 +202,6 @@ module PlainSite
                 end
                 result=render_task.render_url url
                 if result
-                    res['Content-Type'] = 'text/html'
                     res.body=result
                     next
                 end
@@ -209,8 +210,8 @@ module PlainSite
                     serve_static server,static_file,req,res
                     next
                 end
-                res.status=404
-                res.body='404 Not Found:'+url
+                res.status=301
+                res['Location']='/404.html'
             end
             t = Thread.new { server.start }
             trap('INT') { server.shutdown }
@@ -241,13 +242,16 @@ module PlainSite
         def create_pygments_css
             return unless config['code_highlight'] && config['code_highlight']['engine']=='pygments'
             cls='.highlight'
-            css_path=config['code_highlight']['pygments_css'] || '/css/pygments.css'
-            css_path=File.join @assets_path,css_path
-            style=config['code_highlight']['pygments_style'] || 'native'
-            FileUtils.mkdir_p File.dirname(css_path)
-            css_content=Pygments.css(cls,style:style)
-            File.open(css_path,'wb') do |f|
-                f.write css_content
+            css_list=config['code_highlight']['pygments_css_list']
+            css_list=['native','/css/pygments.css'] unless css_list
+            css_list.each do |a|
+                style,css_path=a
+                css_path=File.join @assets_path,css_path
+                FileUtils.mkdir_p File.dirname(css_path)
+                css_content=Pygments.css(cls,style:style)
+                File.open(css_path,'wb') do |f|
+                    f.write css_content
+                end
             end
         end
 
