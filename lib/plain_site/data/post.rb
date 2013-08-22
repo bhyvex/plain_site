@@ -126,7 +126,7 @@ module PlainSite::Data
                     lexer:$1,
                     linenos: $2 ? 'table' : false ,
                     linenostart: $3 ? $3[1..-1].to_i : 1,
-                    code: $4,
+                    code: $4.strip,
                     nowrap:$4["\n"].nil?
                 }
                 placeholder
@@ -140,7 +140,8 @@ module PlainSite::Data
                 code=Pygments.highlight v[:code],lexer:v[:lexer],options:{
                         linenos:v[:linenos],
                         linenostart:v[:linenostart],
-                        nowrap:v[:nowrap]
+                        nowrap:v[:nowrap],
+                        startinline: v[:lexer] == 'php'
                 }
                 code="<span class=\"highlight\">#{code}</span>" if v[:nowrap]
                 post_content[k]=code # String#sub method has a hole of back reference
