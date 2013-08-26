@@ -69,7 +69,7 @@ module PlainSite
 
         # Copy _site/assets to root
         def copy_assets
-            Utils.merge_folder @assets_path,@dest
+            Utils.merge_folder @assets_path,@dest,true
         end
 
         # Init site structure
