@@ -1,5 +1,6 @@
 Gemfile.lock
 rdoc
+doc
 .DS_Store
 *.gem
 *.rbc
