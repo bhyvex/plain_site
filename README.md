@@ -60,7 +60,7 @@ A Simple Static Site Generator Inspired by Jekyll and Octopress.
     └── config.yml
 ```
 
-一个PlainSite站点目录，即是一个GitPages库目录。为了不和Jekyll冲突，需要在目录下放置一个 ```.nojekyll``` 文件。 所以，如果将目录提交到GitPages后，目录中的静态文件都是可以通过Web方式访问到的。目录```_src```是PlainSite所专用的目录，注意，这个目录及其下的文件也是提交到Git并且可以通过Web访问的。下面是各子目录的用途：
+一个PlainSite站点目录，即是一个GitPages库目录。所以，如果将目录提交到GitPages后，目录中的静态文件都是可以通过Web方式访问到的。目录```_src```是PlainSite所专用的目录，注意，这个目录及其下的文件也是提交到Git并且可以通过Web访问的。下面是各子目录的用途：
 
 1. ```posts```: 文章目录，目录下一个文件对应一条数据，通过目录组织它的类别(Category)
 2. ```routes.rb```: 包含配置URL的Ruby文件，用于指定站点总共有多少种URL，每种URL返回的内容使用的数据（posts目录中的数据）及用来渲染的模板(templates下的ERB类型的文件)
@@ -124,7 +124,7 @@ Post文件必须包含一个YAML-Front格式的Header，两个```---```之间的
 并且Post至少要有```title```属性。Post内容中可以通过highlight标签使用代码高亮功能（不管对于Markdown格式还是HTML格式，都是使用相同格式的```<highlight></highlight>```标签）。
 Post文件还支持内嵌ERB模板代码，运行时可以访问到当前Post对象自身，详见Ruby文档。
 例如，Post 文件```_src/posts/programming/2011-02-28-hello-world.md```的内容：
-```md
+```
 ---
 title: Hello,world!
 tags: [Ruby,Python,Java,Haskell]
@@ -233,6 +233,7 @@ layout: base.html
 ```
 
 ```base.html```的内容：
+
 ```erb
 <html>
 <head>

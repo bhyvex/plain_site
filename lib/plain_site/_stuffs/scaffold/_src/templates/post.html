@@ -2,25 +2,68 @@
 layout: base.html
 ---
 
-
 <% content_for :page_title do %>
 	<%=title %>
 <% end %>
 
 <% content_for :page_content do %>
-	<article>
-        <h2><%=title %></h2>
-        <p>Date: <%=date%></p>
-		<div>
-            <%=self.content%>
-        </div>
+	<nav class="category-path">
+		<a href="<%=site.url%>" rel="home">Home</a> »
+		<% category.to_a[1..-1].each do |cat| %>
+			<a href="/<%=cat.data_id%>/index.html" rel="category"><%=cat.display_name%></a> »
+		<% end %>
+		<em><%= title %></em>
+	</nav>
+	<% if respond_to? :github_url %>
+		<a class="github-fork" target="_blank" href="<%=github_url%>" rel="alternate"><img src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" /></a>
+	<% end %>
+
+	<%
+	ltag="lang='#{lang}'" if respond_to? :lang
+	%>
+	<article <%=ltag%> id="article">
+
+    <h1 class="article-title">
+      <a href="<%=url%>" rel="self"><%= title %></a>
+      <small><a href="<%=site.url%>" rel="author"><%=site.author%></a> — <time><%=date%></time></small>
+    </h1>
+
+
+
+		<%=self.content%>
+
+    <% if respond_to? :github_url %>
+    <h4>项目地址</h4>
+    <p>Github：<a target="_blank" href="<%=github_url%>" rel="alternate"><%=github_url%></a></p>
+    <% end %>
+
+
 	</article>
-    <nav>
+	<hr />
+	<% if prev_post || next_post %>
+    <nav class="near-posts link-list">
+		<% if next_post %>
+            <a href="<%=next_post.url%>" rel="next"><i>⇦</i><em><%=html_escape  next_post.title%></em></a>
+        <% end %>
         <% if prev_post %>
-            <a href="<%=prev_post.url%>">Previous post:<%=prev_post.title%></a>
-        <% end %> |
-        <% if next_post %>
-            <a href="<%=next_post.url%>">Next post:<%=next_post.title%></a>
+            <a href="<%=prev_post.url%>" rel="prev" class="prev"><i>⇨</i><em><%=html_escape prev_post.title%></em></a>
         <% end %>
     </nav>
+    <hr />
+    <% end %>
+
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = ''; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <p>Comments powered by <a href="http://disqus.com/" target="_blank">Disqus!</a></p>
 <% end %>

@@ -2,12 +2,13 @@
 title: Hello,world!
 ---
 
-Hello,world!
-============
+### Hello,world!
+
+This is a test!
 
 Ruby:<highlight ruby>puts "Hello,world!"</highlight>
 
-Java:
+#### Java
 <highlight java linenos>
 class HelloWorldApp {
     public static void main(String[] args) {
@@ -16,11 +17,14 @@ class HelloWorldApp {
 }
 </highlight>
 
-Haskell:
+#### Haskell
 <highlight haskell linenos=0>
 module Main where
 
 main :: IO ()
 main = putStrLn "Hello, World!"
 </highlight>
+
+
+Self url:[<%=title%>](<%=url%>)
 

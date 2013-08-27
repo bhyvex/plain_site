@@ -49,7 +49,16 @@ module PlainSite
             @config = (File.exists? @config_file) ? (YAML.safe_load_file @config_file) : {}
         end
 
-        # The String site root url,example:http://jex.im,define in config.yml: config['url']
+        # Access config.yml data through site's property
+        def method_missing(name,*args,&block)
+            if args.empty? && block.nil?
+                v=config[name] || config[name.to_s]
+                return v unless v.nil?
+            end
+            super
+        end
+
+        # The String site root url,example:http://jex.im/,define in config.yml: config['url']
         def url
             @url = @url || config['url'] || ''
         end
@@ -243,7 +252,8 @@ module PlainSite
             return unless config['code_highlight'] && config['code_highlight']['engine']=='pygments'
             cls='.highlight'
             css_list=config['code_highlight']['pygments_css_list']
-            css_list=['native','/css/pygments.css'] unless css_list
+            css_list= css_list.each_pair.to_a if css_list
+            css_list=[:native,'/css/pygments.css'] unless css_list
             css_list.each do |a|
                 style,css_path=a
                 css_path=File.join @assets_path,css_path

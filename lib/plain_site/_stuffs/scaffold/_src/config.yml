@@ -1,9 +1,9 @@
 url: http://example.com/
-name: 'Demo Blog'
+name: Demo Blog
+author: Ego
 code_highlight:
     engine: pygments
     pygments_css_list:
-        - [native,css/pygments_native.css]
-        - [default,css/pygments.css]
+        default: css/pygments.css
 
 
