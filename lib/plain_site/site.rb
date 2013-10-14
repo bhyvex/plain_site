@@ -189,9 +189,9 @@ module PlainSite
         end
         private :serve_static
 
-        # Run a preview server on 0.0.0.0:1990
+        # Run a preview server on localhost:1990
         def serve(opts={})
-            host=opts[:host] || '127.0.0.1'
+            host=opts[:host] || 'localhost'
             port=opts[:port] || '1990'
             self.url= "http://#{host}:#{port}"
             create_pygments_css
@@ -199,7 +199,7 @@ module PlainSite
                 self.reload
             end
 
-            server = WEBrick::HTTPServer.new(Port:port,BindAddress:host)
+            server = WEBrick::HTTPServer.new(Port:port,BindAddress:'0.0.0.0')
             server.mount_proc '/' do |req,res|
                 url= req.path_info
                 url= '/index.html' if url=='/'

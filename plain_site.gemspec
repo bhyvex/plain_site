@@ -3,10 +3,10 @@
 
 Gem::Specification.new do |s|
     s.name         = 'plain_site'
-    s.version      = '0.0.1'
+    s.version      = '0.0.2'
     s.license      = 'MIT'
     s.date         = '2013-08-25'
-    s.author       = 'CJ'
+    s.author       = 'Jex'
     s.email        = 'i@jex.im'
     s.homepage     = 'https://github.com/jex-im/plain_site'
     s.summary      = 'A simple static site generator.'
@@ -21,14 +21,15 @@ Gem::Specification.new do |s|
     s.required_ruby_version = '>= 1.9.3'
 
     [
-        'pygments.rb', '~> 0.5.1',
+        'pygments.rb', '~> 0.5.0',
         'maruku', '~> 0.6.1',
         'safe_yaml', '~> 0.9.4',
         'grit', '~> 2.5.0',
         'rake', '~> 10.0.3',
         'rdoc', '~> 4.0.0',
         'commander', '~> 4.1.3',
-        'listen', '~> 1.2.3'
+        'listen', '~> 1.2.3',
+        'bundler', '~> 1.3.5'
     ].each_slice(2) do |a|
         s.add_runtime_dependency *a
     end

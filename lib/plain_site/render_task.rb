@@ -28,7 +28,7 @@ module PlainSite
         #           "/article/2011/hello-world.html"
         #                   with example data "posts/2011-09-09-hello-world.md"
         # data - The Array|PostList|Object|String data to render
-        #        In String case,it reprents the post.data_id or category.data_id.
+        #        In String case,it represents the post.data_id or category.data_id.
         #        Example: 'essay/*' same as $site.db['essay/*']
         #        If data is Array or PostList,will generate each item with template,
         #        else only generate one page

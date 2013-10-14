@@ -5,5 +5,6 @@ code_highlight:
     engine: pygments
     pygments_css_list:
         default: css/pygments.css
+disqus_id:
 
 

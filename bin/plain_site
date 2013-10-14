@@ -6,6 +6,7 @@ require 'commander/import'
 require 'plain_site'
 require 'plain_site/commands'
 
+program :name, 'PlainSite'
 program :version, PlainSite::VERSION
 program :description, 'PlainSite - simple static site generator.'
 default_command :help

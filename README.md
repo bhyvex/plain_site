@@ -35,7 +35,7 @@ A Simple Static Site Generator Inspired by Jekyll and Octopress.
 2. build命令可通过Git Status，只生成被修改过的Post及Template对应的页面。
 
       _但只能是Post或Template是被直接配置在```routes.rb```中```data```和```template```项中。如果Post是在ERB代码中直接读出，而不是在```routes.rb```中```data```项中配置的，则不能被```build```命令识别，需要将```build_anyway```项设置成true。_
-      
+
 3. 通过serve命令，运行一个预览服务器，修改文件后可直接刷新浏览器看到结果。
 
 ## More
@@ -73,7 +73,7 @@ A Simple Static Site Generator Inspired by Jekyll and Octopress.
 ## Basic Concepts
 
 PlainSite 包含四个核心概念:
-  
+
 1. Post
 
       Plain text file under ```_src/posts/```,represents your article contents.
@@ -83,11 +83,11 @@ PlainSite 包含四个核心概念:
 
       Directory under  ```_src/posts/```.
       ```PlainSite::Data::Category``` object in ruby.
-      
+
 3. Template
 
       ERB template Under ```_src/templates/``` directory.
-      
+
 4. Routes
 
       A ruby script under ```_src/routes.rb```. 配置输出的URL路径规则.
@@ -145,13 +145,13 @@ def hello():
   print("Hello")
 </highlight>
 
-PHP代码不需要加"<?php"的头，还可指定行号从几开始：
+还可指定行号从几开始,PHP代码不需要加"<?php"的头：
 <highlight php linenos=20>
 echo "PlainSite";
 ob_flush();
 </highlight>
 
-如果代码中不包含换行，将自动输出成inline格式的<highlight ruby>puts "但你还是要指定语言"<highlight>
+如果代码中不包含换行，将自动输出成inline格式的<highlight ruby>puts "但你还是要指定语言"</highlight>
 
 代码高亮就这么些功能了，没有其它的了。
 
@@ -232,7 +232,7 @@ layout: base.html
 <% end %>
 ```
 
-```base.html```的内容：
+`base.html`的内容：
 
 ```erb
 <html>
@@ -245,7 +245,11 @@ layout: base.html
 </html>
 ```
 
+### Sites using PlainSite
+
+<http://jex.im>
 
 
 
-      
+
+

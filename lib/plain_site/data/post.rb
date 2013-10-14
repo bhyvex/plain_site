@@ -143,7 +143,7 @@ module PlainSite::Data
                         nowrap:v[:nowrap],
                         startinline: v[:lexer] == 'php'
                 }
-                code="<span class=\"highlight\">#{code}</span>" if v[:nowrap]
+                code="<code class=\"highlight\">#{code}</code>" if v[:nowrap]
                 post_content[k]=code # String#sub method has a hole of back reference
             end
             post_content
