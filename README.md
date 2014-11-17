@@ -15,14 +15,17 @@ A Simple but Powerful Static Site Generator Inspired by Jekyll and Octopress.
   cd mysite
   plainsite init
   ```
+
 3. Create new post:
   ```
   plainsite newpost post-slug "Hello,wolrd!This is the title!"
   ```
+
 4. Preview site,open <http://localhost:1990/> in your web browser.
   ```
   plainsite serve
   ```
+
 5. Configure '_src/config.yml'
    ```yaml
    url: http://example.com   # You site's domain or url prefix.
@@ -30,6 +33,7 @@ A Simple but Powerful Static Site Generator Inspired by Jekyll and Octopress.
    name: YouBlogName
    author: YouName
    ```
+
 6. Build site static pages:
   ```
   plainsite build
