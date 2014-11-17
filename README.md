@@ -6,21 +6,21 @@ A Simple but Powerful Static Site Generator Inspired by Jekyll and Octopress.
 ## Getting Started
 
 1. Install gem:
-  ```bash
+  ```
   gem install plain_site
   ```
 
 2. Init site:
-  ```bash
+  ```
   cd mysite
   plainsite init
   ```
 3. Create new post:
-  ```bash
+  ```
   plainsite newpost post-slug "Hello,wolrd!This is the title!"
   ```
 4. Preview site,open <http://localhost:1990/> in your web browser.
-  ```bash
+  ```
   plainsite serve
   ```
 5. Configure '_src/config.yml'
@@ -31,7 +31,7 @@ A Simple but Powerful Static Site Generator Inspired by Jekyll and Octopress.
    author: YouName
    ```
 6. Build site static pages:
-  ```bash
+  ```
   plainsite build
   ```
 
@@ -66,6 +66,7 @@ Run `plainsite init` will get things done.
 ```
 
 All files under `_src` directory are the source files.Here is each sub directory's usage:
+
 1. `assets`: Put all your static files in it for easier maintemance.When building,PlainSite will copy them to site's root.For example,you want to [add a CNAME file to enable custom domain](https://help.github.com/articles/adding-a-cname-file-to-your-repository/),you need to put it at `/_src/assets/CNAME`,so PlainSite will copy it to `/CNAME`.
 2. `data`: Put your post files here,each file corresponds to a `Post`,each directory corresponds to a `Category`.
 3. `templates`: ERB template files.
@@ -104,7 +105,8 @@ echo "PlainSite";
 ob_flush();
 </highlight>
 
-If there is no line feed char in code,it will output an inline code element:<highlight>puts "Inline"</highlight>
+If there is no line feed char in code,
+it will output an inline code element:<highlight>puts "Inline"</highlight>
 ```
 
 ## Customation
