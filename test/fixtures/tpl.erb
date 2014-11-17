@@ -3,7 +3,5 @@ layout: layout.erb
 ---
 
 <%content_for :body do %>
-
-<%=shell code%><%=include 'include.erb'%>
-
+<%=include 'include.erb'%><%raw do%><html><%end%>
 <%end %>

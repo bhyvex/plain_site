@@ -1,195 +1,215 @@
 #coding:utf-8
 module PlainSite;end
 module PlainSite::Data
-    require 'pygments'
-    require 'maruku'
-    require 'securerandom'
-    require 'plain_site/data/front_matter_file'
-    require 'plain_site/tpl/lay_erb'
+  require 'pygments'
+  require 'maruku'
+  require 'time'
+  require 'securerandom'
+  require 'plain_site/data/front_matter_file'
+  require 'plain_site/tpl/lay_erb'
 
-    class Post
-        attr_reader(
-            :date, # The Date of post
-            :slug, # The String slug of post,default is it's filename without date and dot-extname
-            :path, # The String post file path
-            :relpath, # The String path relative to site.posts_path
-            :data_id, # The String data id,format:'category/sub-category/slug'
-            :category_path, # The String category path
-            :filename, # The String filename
-            :site
-        )
+  class Post
+    attr_reader(
+      :slug, # The String slug of post,default is it's filename without date and dot-extname
+      :path, # The String post file path
+      :relpath, # The String path relative to site.data_path
+      :data_id, # The String data id,format:'category/sub-category/slug'
+      :category_path, # The String category path
+      :filename, # The String filename
+      :site,
+      :is_index # The Bool to indicate if this is an index post.
+    )
 
-        attr_accessor( #These properties are inited by others
-            :prev_post, # The Post previous,set by PostList
-            :next_post, # The Post next,set by PostList
-        )
+    attr_accessor( #These properties are inited by others
+      :prev_post, # The Post previous,set by PostList
+      :next_post, # The Post next,set by PostList
+    )
 
-        DATE_NAME_RE=/^(\d{4})-(\d{1,2})-(\d{1,2})-(.+)$/
-        HIGHLIGHT_RE=/<highlight\s+([\w+-]+)(\s+linenos(=\d+)?)?\s*>(.+?)<\/highlight>/m
+    DATE_NAME_RE=/^(\d{4})-(\d{1,2})-(\d{1,2})-(.+)$/
+    HIGHLIGHT_RE=/<highlight(\s+([\w+-]+)(\s+linenos(=\d+)?)?\s*)?>(.+?)<\/highlight>/m
+    MARKDOWN_CODE_RE=/```(.+?)```/m
 
-        # Init a post
-        # path - The String file abs path or relative to site.posts_path,at present,only support '.html' and '.md' extname.
-        # site - The Site this post belongs to
-        def initialize(path,site)
-            path= path[0]=='/' ? path : File.join(site.posts_path,path)
-            @site=site
-            @path=File.expand_path path
-            @relpath=@path[(site.posts_path.length+1)..-1]
 
-            @filename=File.basename @path
-            @extname=File.extname @filename
-            if DATE_NAME_RE =~ @filename
-                @date=Date.new $1.to_i,$2.to_i,$3.to_i
-                @slug=File.basename $4,@extname
-            else
-                @date=Date.today
-                @slug=File.basename @filename,@extname
-            end
-            @category_path=File.dirname(@relpath)
-            if @category_path=='.'
-                @category_path=''
-                @data_id=@slug
-            else
-                @data_id=File.join @category_path,@slug
-            end
+    # Init a post
+    # path - The String file abs path or relative to site.data_path,at present,only support '.html' and '.md' extname.
+    # site - The Site this post belongs to
+    def initialize(path,site)
+      path= path[0]=='/' ? path : File.join(site.data_path,path)
+      if File.directory? path # create as category index post
+        path=(@@extnames.map {|x| File.join path+'/index'+x}).detect {|f| File.exists? f}
+        @is_index=true
+      end
+      @site=site
+      @path=File.expand_path path
+      @relpath=@path[(site.data_path.length+1)..-1]
 
-        end
+      @filename=File.basename @path
+      @extname=File.extname @filename
+      if DATE_NAME_RE =~ @filename
+        @date=Date.new $1.to_i,$2.to_i,$3.to_i
+        @slug=File.basename $4,@extname
+      end
+      @slug=File.basename @filename,@extname unless @slug
 
-        # The Category this post belongs to
-        def category
-            return @category if @category
-            require 'plain_site/data/category'
-            @category=Category.new @category_path,@site
-        end
+      @category_path=File.dirname(@relpath)
+      if @category_path=='/' or @category_path=='.'
+        @category_path=''
+        @data_id=@slug
+      else
+        @data_id=File.join @category_path,@slug
+      end
 
-        # The String content type of post,default is it's extname without dot
-        def content_type
-            return @content_type if @content_type
-            @content_type=post_file.headers['content_type']
-            @content_type=@extname[1..-1] if @content_type.nil?
-            @content_type
-        end
+    end
+    # The Date of post
+    def date
+      return @date if @date
+      @date=post_file.headers['date'] || Date.today
+      # @date= @date ? DateTime.parse(@date).to_date : Date.today
+    end
 
-        # The Boolean value indicates if this post is a draft,default is false,alias is `draft?`
-        # def draft
-        #     return @draft unless @draft.nil?
-        #     @draft=!!post_file.headers['draft']
-        # end
-        # alias :draft? :draft
+    # The Category this post belongs to
+    def category
+      return @category if @category
+      require 'plain_site/data/category'
+      @category=Category.new @category_path,@site
+    end
 
-        # def deleted
-        #     return @deleted unless @deleted.nil?
-        #     @deleted=!!post_file.headers['deleted']
-        # end
-        # alias :deleted? :deleted
+    # The String content type of post,default is it's extname without dot
+    def content_type
+      return @content_type if @content_type
+      @content_type=post_file.headers['content_type']
+      @content_type=@extname[1..-1] if @content_type.nil?
+      @content_type
+    end
 
-        # Private
-        def post_file
-            return @post_file if @post_file
-            @post_file=FrontMatterFile.new @path
-        end
-        private :post_file
+    # The Boolean value indicates if this post is a draft,default is false,alias is `draft?`
+    # def draft
+    #   return @draft unless @draft.nil?
+    #   @draft=!!post_file.headers['draft']
+    # end
+    # alias :draft? :draft
 
-        # Post file raw content
-        def raw_content
-            post_file.content
-        end
+    # def deleted
+    #   return @deleted unless @deleted.nil?
+    #   @deleted=!!post_file.headers['deleted']
+    # end
+    # alias :deleted? :deleted
 
-        # Content html
-        # Render highlight code first
-        # Example:
-        #   It's html tag syntax,language is required!
-        #   <highlight ruby>puts 'Hello'</highlight>
-        #   With line numbers
-        #   <highlight ruby linenos>puts 'Hello'</highlight>
-        #   Set line number start from 10
-        #   <highlight ruby linenos=10>puts 'Hello'</highlight>
-        #
-        # Highlight options:
-        #   linenos - If provide,output will contains line number
-        #   linenos=Int - Line number start from,default is 1
-        #
-        # If no new line in code,the output will be inline nowrap style and no linenos.
-        #
-        # Then render erb template,context is self,you can access self and self.site methods
-        #
-        # Return the String html content
-        def content
-            return @content if @content
+    # Private
+    def post_file
+      return @post_file if @post_file
+      @post_file=FrontMatterFile.new @path
+    end
+    private :post_file
 
-            post_content=raw_content.dup
-            # stash highlight code
-            highlights={}
-            post_content.gsub! HIGHLIGHT_RE  do
-                placeholder='HIGHLIGHT-'+SecureRandom.uuid+'-ENDHIGHLIGHT'
-                highlights[placeholder]={
-                    lexer:$1,
-                    linenos: $2 ? 'table' : false ,
-                    linenostart: $3 ? $3[1..-1].to_i : 1,
-                    code: $4.strip,
-                    nowrap:$4["\n"].nil?
-                }
-                placeholder
-            end
-            # Then render erb template if needed
-            post_content=PlainSite::Tpl::LayErb.render_s post_content,self if post_content['<%']
-            post_content=self.class.content_to_html post_content,content_type
+    # Post file raw content
+    def raw_content
+      post_file.content
+    end
 
-            #put back code
-            highlights.each do |k,v|
-                code=Pygments.highlight v[:code],lexer:v[:lexer],options:{
-                        linenos:v[:linenos],
-                        linenostart:v[:linenostart],
-                        nowrap:v[:nowrap],
-                        startinline: v[:lexer] == 'php'
-                }
-                code="<code class=\"highlight\">#{code}</code>" if v[:nowrap]
-                post_content[k]=code # String#sub method has a hole of back reference
-            end
-            post_content
-        end
+    # Rednered html content
+    # It must render highlight code first.
+    # Highlight syntax:
+    #   Html tag style:
+    #     <highlight>puts 'Hello'</highlight>
+    #     With line numbers and language
+    #     <highlight ruby linenos>puts 'Hello'</highlight>
+    #     Set line number start from 10
+    #     <highlight ruby linenos=10>puts 'Hello'</highlight>
+    #
+    #     Highlight html tag options:
+    #       linenos - If provide,output will contains line number
+    #       linenos=Int - Line number start from,default is 1
+    #   If no new line in code,the output will be inline nowrap style and no linenos.
+    #
+    #   You can also use markdown style code block,e.g. ```puts 'Code'```.
+    #   But code this style doesn't rendered by Pygments.
+    #   You need to load a browser side renderer,viz. SyntaxHighlighter.
+    #
+    # Then render erb template,context is post itself,you can access self and self.site methods
+    #
+    # Return the String html content
+    def content
+      return @content if @content
+      p=@path.to_sym
+      return @@cache[p] if @@cache.key? p
 
-        # The String url of this post in site
-        def url
-            @site.url_for @data_id
-        end
+      post_content=raw_content.dup
+      # stash highlight code
+      codeMap={}
+      post_content.gsub! HIGHLIGHT_RE  do
+        placeholder='-HIGHLIGHT '+SecureRandom.uuid+' ENDHIGHLIGHT-'
+        codeMap[placeholder]={
+          lexer:$2,
+          linenos: $3 ? 'table' : false ,
+          linenostart: $4 ? $4[1..-1].to_i : 1,
+          code: $5.strip,
+          nowrap:$5["\n"].nil?
+        }
+        placeholder
+      end
 
-        # You can use method call to access post file front-matter data
-        def respond_to?(name)
-            return true if post_file.headers.key? name.to_s
-            super
-        end
 
-        def method_missing(name,*args,&block)
-            if args.length==0 && block.nil? &&  post_file.headers.key?(name.to_s)
-                return post_file.headers[name.to_s]
-            end
-            super
-        end
+      # Then render erb template if needed
+      if post_content['<%'] && !post_file.headers['disable_erb']
+        post_content=PlainSite::Tpl::LayErb.render_s post_content,self
+      end
 
-        # Keep track of all instances
-        # @@instances={}
-        # Keep same path return same instance but reinit the writable attributes
-        # def self.new(path,site)
-        #   path= path[0]=='/' ? path : File.join(site.posts_path,path)
-        #   if @instances.has_key? path
-        #       @instances[path].dup
-        #   else
-        #       post=super
-        #       @instances[path]=post
-        #   end
-        # end
+      post_content=self.class.content_to_html post_content,content_type
 
-        def self.content_to_html(content,content_type)
-            if content_type=='md'
-                content=Maruku.new(content).to_html
-            end
-            content
-        end
+      #put back code
+      codeMap.each do |k,v|
+        code=Pygments.highlight v[:code],lexer:v[:lexer],options:{
+            linenos:v[:linenos],
+            linenostart:v[:linenostart],
+            nowrap:v[:nowrap],
+            startinline: v[:lexer] == 'php'
+        }
+        code="<code class=\"highlight\">#{code}</code>" if v[:nowrap]
+        post_content[k]=code # String#sub method has a hole of back reference
+      end
+      @@cache[p]=@content=post_content
+    end
 
-        def self.supported_ext_names
-            ['md','html']
-        end
+    @@cache={}
+    def self.clearCache
+      @@cache={}
+    end
 
-    end # class Post
+    # The String url of this post in site
+    def url
+      @site.url_for @data_id
+    end
+
+    # You can use method call to access post file front-matter data
+    def respond_to?(name)
+      return true if post_file.headers.key? name.to_s
+      super
+    end
+
+    def method_missing(name,*args,&block)
+      if args.length==0 && block.nil? &&  post_file.headers.key?(name.to_s)
+        return post_file.headers[name.to_s]
+      end
+      super
+    end
+
+    def self.content_to_html(content,content_type)
+      if content_type=='md'
+        content=Maruku.new(content).to_html
+      end
+      content
+    end
+
+    @@extnames=['md','html']
+
+    def self.extnames
+      @@extnames
+    end
+
+    def self.extname_ok?(f)
+      @@extnames.include?  File.extname(f)[1..-1]
+    end
+
+  end # class Post
 end # module PlainSite::Data

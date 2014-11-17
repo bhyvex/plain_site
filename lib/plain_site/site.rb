@@ -1,269 +1,321 @@
 #coding:utf-8
 module PlainSite
-    require 'grit'
-    require 'uri'
-    require 'fileutils'
-    require 'webrick'
-    require 'listen'
-    require 'plain_site/data/category'
-    require 'plain_site/data/post'
-    require 'plain_site/render_task'
-    require 'plain_site/utils'
-    require 'plain_site/socket_patch'
+  require 'grit'
+  require 'uri'
+  require 'pathname'
+  require 'fileutils'
+  require 'webrick'
+  require 'listen'
+  require 'plain_site/data/category'
+  require 'plain_site/data/post'
+  require 'plain_site/render_task'
+  require 'plain_site/utils'
+  require 'plain_site/socket_patch'
 
-    class Site
-        SELF_DIR=File.realpath File.dirname(__FILE__)
-        SCAFFOLD_DIR=File.join(SELF_DIR,'_stuffs/scaffold')
-        attr_reader(
-            :root,
-            :dest, # Alter build destination directory,default same as root
-            :posts_path, # The String posts path
-            :templates_path # The String templates path
-        )
-        attr_writer :url,:name
+  SELF_SRC_DIR=File.realpath File.dirname(__FILE__)
+  SCAFFOLD_DIR=File.join(SELF_SRC_DIR,'_scaffold')
 
-        # Params
-        # root - The String root path of site,must be an exists path
-        def initialize(root)
-            @root= File.realpath root
-            @dest= @root
-            @app_path=File.join(@root,'_src')
-            @posts_path=File.join(@app_path,'posts')
-            @routes_rb=File.join(@app_path,'routes.rb')
-            @templates_path=File.join(@app_path,'templates')
-            @assets_path=File.join(@app_path,'assets')
-            @config_file= File.join(@app_path,'config.yml')
+  class Site
+    attr_reader(
+      :root,
+      :local,
+      :assets_path,
+      :dest, # Alter build destination directory,default same as root
+      :data_path, # The String data posts directory path
+      :templates_path # The String templates directory path
+    )
+
+    # Params
+    # root - The String root path of site,must be an exists path
+    def initialize(root)
+      @root= File.realpath root
+      @dest= @root
+      @src_path=File.join(@root,'_src')
+      @data_path=File.join(@src_path,'data')
+      @routes_rb=File.join(@src_path,'routes.rb')
+      @templates_path=File.join(@src_path,'templates')
+      @assets_path=File.join(@src_path,'assets')
+      @config_file= File.join(@src_path,'config.yml')
+      @extensions= File.join(@src_path,'extensions')
+
+      load_extensions
+      create_pygments_css
+    end
+
+    # Reload,clean cached instance variables read from file
+    def reload
+      @config=nil
+      @render_task=nil
+      @isolated_files=nil
+      @data=nil
+      Data::Post.clearCache
+      Data::FrontMatterFile.clearCache
+      create_pygments_css
+      load_extensions
+    end
+
+    # The Hash config defined if config.yml
+    def config
+      return @config if @config
+      @config = (File.exists? @config_file) ? (YAML.safe_load_file @config_file) : {}
+    end
+
+    # Access config.yml data through site's property
+    def method_missing(name,*args,&block)
+      return config[name.to_s] if args.empty? && block.nil? && (config.key? name.to_s)
+      super
+    end
+
+    # Return the Category object represents _site/data
+    def data
+      return @data if @data
+      @data=Data::Category.new @data_path,self
+    end
+
+    # Init site structure
+    def init_scaffold(override=false)
+      Utils.merge_folder SCAFFOLD_DIR,@root,override
+      reload
+    end
+
+    # Create a new post file
+    def newpost(p,title)
+      ext=File.extname p
+      unless ext.empty? || (Data::Post.extname_ok? p)
+        raise Exception,"Unsupported file type:#{ext}.Supported extnames:"+Data::Post.extnames.join(",")
+      end
+
+      name=File.basename p,ext
+      ext='.'+Data::Post.extnames[0] unless ext
+      name= "#{name}#{ext}"
+
+      if Data::Post::DATE_NAME_RE =~ name
+        date=''
+      else
+        date="date: #{Date.today}\n"
+      end
+
+      if p['/']
+        path=File.join @data_path,(File.dirname p)
+        FileUtils.mkdir_p  path
+      else
+        path=@data_path
+      end
+      path="#{path}/#{name}"
+      File.open(path,'wb') do |f|
+        f.write "---\ntitle: #{title}\n#{date}---\n\n#{title}\n====="
+      end
+      path
+    end
+
+    # Config route specified data with ordered template and url path.
+    # See: RenderTask#route
+    def route(opt)
+      render_task.route(opt)
+    end
+
+    # Get the url for object
+    # obj - The Post|PageListPage|Category|String
+    # Return the String url prefix with site root url(site.url) or relative path if build --local
+    def url_for(x)
+      render_task.url_for(x)
+    end
+
+    # Build static pages
+    # all - The Boolean value to force build all posts.Default only build updated posts.
+    # dest - The String path of destination directory
+    # includes - The String[] path of posts or templates to force regeneration
+    def build(opts={})
+      @local=opts[:local]
+      @dest= opts[:dest] if opts[:dest]
+      includes= opts[:includes]
+      if includes && ! includes.empty?
+        includes.map! &(File.method :realpath)
+      else
+        includes=nil
+      end
+
+      files=diff_files includes
+
+      if opts[:all] || files.nil?
+        render_task.render
+      else
+        render_task.render(files)
+      end
+      copy_assets
+    end
+
+    # Clean isolated files under dest directory
+    # If file is neither generated by `routes.rb` nor copied from `_src/assets/`,it will be deleted.
+    def clean
+      isolated_files.each do |f|
+        File.delete f
+      end
+    end
+
+    def isolated_files
+      return @isolated_files if @isolated_files
+      all_path= render_task.all_urlpath.map do |p|
+        File.join @dest,p
+      end
+      files= (Dir.glob "#{@dest}/*")
+      files.reject! {|f| f==@src_path} # Skip src
+      @isolated_files=[]
+      files.reduce(isolated_files) do |a,f|
+        if File.directory? f
+          a.concat (Dir.glob "#{f}/**/**")
+        else
+          a.push f
         end
+        next a
+      end
+      @isolated_files.select! do |f|
+        next false if all_path.include? f
+        f=File.join @assets_path,f[@dest.length..-1]
+        not (File.exists? f)  # Keep static assets
+      end
 
-        # Reload,clean cached instance variables read from file
-        def reload
-            @config=nil
-            @name=nil
-            @db=nil
-            @render_task=nil
+      return @isolated_files
+    end
+
+    # Run a preview server on localhost:1990
+    def serve(opts={})
+      host=opts[:host] || 'localhost'
+      port=opts[:port] || '1990'
+      origin_url=config['url']
+
+      Listen.to(@src_path) do |m, a, d|
+        puts "\nReloaded!\n"
+        self.reload
+      end
+
+      server = WEBrick::HTTPServer.new(Port:port,BindAddress:'0.0.0.0')
+      server.mount_proc '/' do |req,res|
+        url= req.path_info
+        url= '/index.html' if url=='/'
+        res.status=404 if url=='/404.html'
+        prevent_caching(res)
+        static_file=File.join @assets_path,url
+        if (File.exists? static_file) && !(File.directory? static_file)
+          serve_static server,static_file,req,res
+          next
         end
-
-        # The Hash config defined if config.yml
-        def config
-            return @config if @config
-            @config = (File.exists? @config_file) ? (YAML.safe_load_file @config_file) : {}
+        config['url']= "http://#{host}:#{port}"
+        result=render_task.render_url url
+        config['url']=origin_url
+        if result
+          res.body=result
+          next
         end
-
-        # Access config.yml data through site's property
-        def method_missing(name,*args,&block)
-            if args.empty? && block.nil?
-                v=config[name] || config[name.to_s]
-                return v unless v.nil?
-            end
-            super
+        static_file=File.join @dest,url
+        if File.exists? static_file
+          serve_static server,static_file,req,res
+          next
         end
-
-        # The String site root url,example:http://jex.im/,define in config.yml: config['url']
-        def url
-            @url = @url || config['url'] || ''
-        end
-
-        def name
-            @name = @name || config['name'] || ''
-        end
-
-        # Return the Category object represents _site/posts
-        def db
-            return @db if @db
-            @db=Data::Category.new @posts_path,self
-            # cat=Data::Category.new @posts_path,self
-            # self.define_singleton_method(__method__) {cat}
-            # cat
-        end
-
-        # Copy _site/assets to root
-        def copy_assets
-            Utils.merge_folder @assets_path,@dest,true
-        end
-
-        # Init site structure
-        def init_scaffold(override=false)
-            Utils.merge_folder SCAFFOLD_DIR,@root,override
-        end
-
-        # Create a new post file
-        def new_post(p,title)
-            ext=File.extname(p)[1..-1]
-            if ! (Data::Post.supported_ext_names.include? ext)
-                ext=Data::Post.supported_ext_names[0]
-            end
-
-            name=File.basename p,File.extname(p)
-            name="#{Date.today}-#{name}" unless Data::Post::DATE_NAME_RE=~name
-            name= "#{name}.#{ext}"
-
-            if p['/']
-                path=File.join @posts_path,(File.dirname p)
-                FileUtils.mkdir_p  path
-            else
-                path=@posts_path
-            end
-            path="#{path}/#{name}"
-            File.open(path,'wb') do |f|
-                f.write "---\ntitle: #{title}\n---\n\n#{title}"
-            end
-            path
-        end
-
-        def render_task
-            return @render_task if @render_task
-            @render_task=RenderTask.new self
-
-            old_site=$site
-            $site=self
-            load @routes_rb
-            $site=old_site
-            @render_task
-        end
-
-        # Build static pages
-        # all - The Boolean value to force build all posts.Default only build updated posts.
-        # dest - The String path of destination directory
-        # includes - The String[] path of posts or templates to force regeneration
-        def build(opts={})
-            @dest= opts[:dest] if opts[:dest]
-            includes= opts[:includes]
-            if includes && ! includes.empty?
-                includes.map! &(File.method :realpath)
-            else
-                includes=nil
-            end
-
-            files=diff_files includes
-
-            if opts[:all] || files.nil?
-                render_task.render
-            else
-                render_task.render(files)
-            end
-            create_pygments_css
-            copy_assets
-        end
-
-        # Get diff_files
-        # since - The String of absolute revision or relative negative number,default to last commit
-        # updated items includes new and modified two cases
-        #
-        # Return Hash
-        # Structure:
-        # {
-        #     updated_posts:[],
-        #     updated_templates:[],
-        #     deleted_posts:[]
-        # }
-        def diff_files(includes=nil)
-            begin
-                repo=Grit::Repo.new @root
-                files=%w(untracked added changed).map {|m|(repo.status.send m).keys}.flatten
-                files.map! {|f|File.join @root,f}
-                deleted_posts=repo.status.deleted.keys.map {|f|File.join @root,f}
-                deleted_posts.select! do |f|
-                    f.start_with? @posts_path
-                end
-            rescue Grit::InvalidGitRepositoryError
-                $stderr.puts "\nSite root is not a valid git repository:#{@root}\n"
-                return nil if includes.nil?
-            end
-            files||=[]
-            files.concat includes if includes
-            files=files.group_by do |f|
-                if f.start_with? @posts_path+'/'
-                    :updated_posts
-                elsif f.start_with? @templates_path+'/'
-                    :updated_templates
-                end
-            end
-            files.delete nil
-            files[:deleted_posts]=deleted_posts if deleted_posts
-            files
-        end
-
-        def serve_static(server,static_file,req,res)
-            handler=WEBrick::HTTPServlet::DefaultFileHandler.new server,static_file
-            handler.do_GET req,res
-        end
-        private :serve_static
-
-        # Run a preview server on localhost:1990
-        def serve(opts={})
-            host=opts[:host] || 'localhost'
-            port=opts[:port] || '1990'
-            self.url= "http://#{host}:#{port}"
-            create_pygments_css
-            Listen.to(@app_path) do |m, a, d|
-                self.reload
-            end
-
-            server = WEBrick::HTTPServer.new(Port:port,BindAddress:'0.0.0.0')
-            server.mount_proc '/' do |req,res|
-                url= req.path_info
-                url= '/index.html' if url=='/'
-                res.status=404 if url=='/404.html'
-                static_file=File.join @assets_path,url
-                if (File.exists? static_file) && !(File.directory? static_file)
-                    serve_static server,static_file,req,res
-                    next
-                end
-                result=render_task.render_url url
-                if result
-                    res.body=result
-                    next
-                end
-                static_file=File.join @dest,url
-                if File.exists? static_file
-                    serve_static server,static_file,req,res
-                    next
-                end
-                res.status=301
-                res['Location']='/404.html'
-            end
-            t = Thread.new { server.start }
-            trap('INT') { server.shutdown }
-            puts "\nServer running on http://#{host}:#{port}/\n"
-            t.join
-        end
-
-        # Config route specified data with ordered template and url path.
-        # See: RenderTask#route
-        def route(opt)
-            @render_task.route(opt)
-        end
-
-        # Get the url for object
-        # obj - The Post|PageListPage|Category|String|Object some thing
-        # Return the String url prefix with site root url(site.url)
-        def url_for(obj)
-            id =if String===obj
-                    obj
-                elsif obj.respond_to? :data_id
-                    obj.data_id
-                else
-                    obj.object_id
-                end
-            (URI.join url,@render_task.id2url_map[id] || '').to_s
-        end
-
-        def create_pygments_css
-            return unless config['code_highlight'] && config['code_highlight']['engine']=='pygments'
-            cls='.highlight'
-            css_list=config['code_highlight']['pygments_css_list']
-            css_list= css_list.each_pair.to_a if css_list
-            css_list=[:native,'/css/pygments.css'] unless css_list
-            css_list.each do |a|
-                style,css_path=a
-                css_path=File.join @assets_path,css_path
-                FileUtils.mkdir_p File.dirname(css_path)
-                css_content=Pygments.css(cls,style:style)
-                File.open(css_path,'wb') do |f|
-                    f.write css_content
-                end
-            end
-        end
+        res.status=301
+        res['Location']='/404.html'
+      end
+      t = Thread.new { server.start }
+      trap('INT') { server.shutdown }
+      puts "\nServer running on http://#{host}:#{port}/\n"
+      t.join
 
     end
+
+    # Get diff_files
+    #
+    # Return Hash
+    # Structure:
+    # {
+    #   updated_posts:[],
+    #   updated_templates:[],
+    #   has_deleted_posts:Bool
+    # }
+    def diff_files(includes=nil)
+      deleted_posts=[]
+      begin
+        repo=Grit::Repo.new @root
+        files=%w(untracked added changed).map {|m|(repo.status.send m).keys}.flatten
+        files.map! {|f|File.join @root,f}
+        deleted_posts=repo.status.deleted.keys.map {|f|File.join @root,f}
+        deleted_posts.select! do |f|
+          f.start_with? @data_path
+        end
+      rescue Grit::InvalidGitRepositoryError
+        $stderr.puts "\nSite root is not a valid git repository:#{@root}\n"
+        return nil if includes.nil?
+      end
+      files||=[]
+      files.concat includes if includes
+      files=files.group_by do |f|
+        if f.start_with? @data_path+'/'
+          :updated_posts
+        elsif f.start_with? @templates_path+'/'
+          :updated_templates
+        else
+          :unrelated
+        end
+      end
+      files.delete :unrelated
+      files[:has_deleted_posts]= ! deleted_posts.empty?
+      files
+    end
+
+
+  private
+    def render_task
+      return @render_task if @render_task
+      @render_task=RenderTask.new self
+
+      $site=self
+      load @routes_rb,true
+      @render_task
+    end
+
+    def serve_static(server,static_file,req,res)
+      handler=WEBrick::HTTPServlet::DefaultFileHandler.new server,static_file
+      handler.do_GET req,res
+    end
+
+    def prevent_caching(res)
+      res['ETag']          = nil
+      res['Last-Modified'] = Time.now + 100**4
+      res['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0'
+      res['Pragma']        = 'no-cache'
+      res['Expires']       = Time.now - 100**4
+    end
+
+
+    # Copy _src/assets to dest root directory
+    def copy_assets
+      Utils.merge_folder @assets_path,@dest,true
+    end
+
+    def load_extensions
+      if File.directory? @extensions
+        (Dir.glob "#{@extensions}/*.rb").each do |f|
+          load f
+        end
+      end
+    end
+
+    def create_pygments_css
+      return unless config['code_highlight'] && config['code_highlight']['engine']=='pygments'
+      cls='.highlight'
+      css_list=config['code_highlight']['pygments_css_list']
+      css_list= css_list.each_pair.to_a if css_list
+      css_list=[:native,'/css/pygments.css'] unless css_list
+      css_list.each do |a|
+        style,css_path=a
+        css_path=File.join @assets_path,css_path
+        next if File.exists? css_path
+        FileUtils.mkdir_p File.dirname(css_path)
+        css_content=Pygments.css(cls,style:style)
+        File.open(css_path,'wb') do |f|
+          f.write css_content
+        end
+      end
+    end
+
+  end
 end

@@ -8,7 +8,7 @@ task :default => [:list]
 
 desc 'List available tasks'
 task :list do
-    sh 'rake -T'
+  sh 'rake -T'
 end
 
 desc 'Run irb'

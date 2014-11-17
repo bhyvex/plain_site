@@ -7,96 +7,87 @@ require 'plain_site/site'
 include PlainSite
 
 class SiteTest < Test::Unit::TestCase
-    FIXTURES_DIR=File.realpath (File.join File.dirname(__FILE__),'fixtures')
-    def setup
-        @site_root=Dir.mktmpdir 'test-site-'
-    end
-    def teardown
-        FileUtils.rm_rf @site_root
-    end
+  FIXTURES_DIR=File.realpath (File.join File.dirname(__FILE__),'fixtures')
+  def setup
+    @site_root=Dir.mktmpdir 'test-site-'
+  end
+  def teardown
+    FileUtils.rm_rf @site_root
+  end
 
-    def test_diff_build
-        site_url='file://'+@site_root+'/'
-        site=Site.new @site_root
-        site.init_scaffold true
-        site.url=site_url
-        assert site.diff_files.nil? ,"Should diff_files be nil"
+  def test_diff_build
+    site=Site.new @site_root
+    site.init_scaffold true
 
-        to_del_post=site.new_post 'essays/git-delete-test1','Git Test 1'
-        to_mod_post=site.new_post 'essays/git-mod-test2','Git Test 2'
-        includes=[]
-        includes.push (site.new_post 'essays/include-test1','Include Test')
-        includes.push (site.new_post 'essays/include-test2','Include Test')
-        includes.push (site.new_post 'essays/include-test3','Include Test')
+    to_del_post=site.newpost 'essays/git-delete-test1','Git Test 1'
+    to_mod_post=site.newpost 'essays/git-mod-test2','Git Test 2'
+    includes=[]
+    includes.push (site.newpost 'essays/include-test1','Include Test')
+    includes.push (site.newpost 'essays/include-test2','Include Test')
+    includes.push (site.newpost 'essays/include-test3','Include Test')
 
-        `(cd #{@site_root};
-        git init;
-        git add .;
-        git commit -m Init;)`
+    `(cd #{@site_root};
+    git init;
+    git add .;
+    git commit -m Init;)`
 
-        FileUtils.rm to_del_post
-        File.open(to_mod_post,'wb') {|f| f.write "---\ntitle: Modified\n---\n Modified!"}
-        new_post=site.new_post 'essays/git-untracked','Git Test Untracked'
+    FileUtils.rm to_del_post
+    File.open(to_mod_post,'wb') {|f| f.write "---\ntitle: Modified\n---\n Modified!"}
+    new_post=site.newpost 'essays/git-untracked','Git Test Untracked'
 
-        added_template=File.join site.templates_path,'test.html'
-        File.open(added_template,'wb') {|f| f.write 'TEST Template'}
-        `(cd #{@site_root};
-        git add #{added_template});`
+    added_template=File.join site.templates_path,'test.html'
+    File.open(added_template,'wb') {|f| f.write 'TEST Template'}
+    `(cd #{@site_root};
+    git add #{added_template});`
 
 
-        files=site.diff_files includes
+    files=site.diff_files includes
 
-        assert [to_mod_post,new_post].to_set <= files[:updated_posts].to_set ,"Should include new and modified posts"
-        assert (files[:deleted_posts].include? to_del_post), "Should include deleted post"
+    assert [to_mod_post,new_post].to_set <= files[:updated_posts].to_set ,"Should include new and modified posts"
+    assert files[:has_deleted_posts], "Should had deleted posts"
 
-        assert (files[:updated_templates].include? added_template), "Should include added template"
+    assert (files[:updated_templates].include? added_template), "Should include added template"
 
-        assert includes.to_set <= files[:updated_posts].to_set ,"Should force include includes-posts"
+    assert includes.to_set <= files[:updated_posts].to_set ,"Should force include includes-posts"
 
+    site.build(all:true)
 
-        site2=Site.new @site_root
-        site2.url=site_url
-        site2.build
+  end
 
-    end
+  def test_build
+    site=Site.new @site_root
+    site.init_scaffold true
 
-    def test_build
-        site=Site.new @site_root
-        site.init_scaffold true
-        site.url='file://'+@site_root+'/'
-
-
-        site.db.subs.each do |cat|
-            20.times do |i|
-                name="2014-#{rand 1..12}-#{rand 1..28 }-hello-post#{i}.md"
-                path=File.join cat.path,name
-                File.open(path,'wb') do |f|
-                    s= <<-CONTENT
+    site.data.subs.each do |cat|
+      20.times do |i|
+        name="2014-#{rand 1..12}-#{rand 1..28 }-hello-post#{i}.md"
+        path=File.join cat.path,name
+        File.open(path,'wb') do |f|
+          s= <<-CONTENT
 ---
 title: Hello,post#{i}
 ---
 
 **Content here!**
 
-Category: <a href="<%=URI.join site.url,"#{cat.name}"%>">#{cat.display_name}</a>
+Category: <a href="<%=URI.join site.url,"#{cat.data_id}"%>">#{cat.display_name}</a>
 
 
 <highlight python>
 def hello(name):
-    print "Hello,%s" % name
+  print "Hello,%s" % name
 
 if __name__=='__main__':
-    hello("World!")
+  hello("World!")
 </highlight>
 CONTENT
-                    f.write s
-                end
-            end
+          f.write s
         end
-
-        #site.build(dest:dest)
-        site.build
-        #puts "\n#{@site_root}\n"
-        #site.serve
+      end
     end
+
+    site.build(dest:@site_root,all:true,local:true)
+    #puts "\n#{@site_root}\n"
+    #site.serve
+  end
 end
