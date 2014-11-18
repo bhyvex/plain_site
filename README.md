@@ -262,6 +262,7 @@ The `base.html` contents：
 ```
 
 ## More
+
 1. Run `gem server` to read plain_site rdoc.
 2. Read the source code.
 
