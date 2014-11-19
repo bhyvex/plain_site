@@ -194,6 +194,9 @@ pre, code {
 pre {
   line-height:120%;
 }
+pre code {
+  white-space: pre;
+}
 
 div:not(.highlight) pre {
   background:#F8F8F8;

@@ -22,7 +22,7 @@ Gem::Specification.new do |s|
 
   [
     'pygments.rb', '~> 0.6.0',
-    'maruku', '~> 0.6.1',
+    'kramdown', '~> 1.5.0'
     'safe_yaml', '~> 0.9.4',
     'grit', '~> 2.5.0',
     'rake', '~> 10.0.3',

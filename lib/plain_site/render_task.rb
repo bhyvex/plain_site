@@ -126,9 +126,7 @@ module PlainSite
       end
       if posts=partials[:updated_posts]
         a,other_tasks=other_tasks.partition do |t|
-          item=t[:item]
-          next posts.include? item.path if Post===item
-          next posts.any? {|p|item.include? p} if PostList===item || PostListPage===item
+          _detectContainsPosts(t[:item],posts)
         end
         build_tasks.concat a
       end
@@ -212,6 +210,21 @@ module PlainSite
           raise BadUrlPatternException,"Unresolved property `#{m}` in url pattern [#{url_pattern}]!"
         end
       end
+    end
+
+    def _detectContainsPosts(item,posts)
+        return posts.include? item.path if Post===item
+        return posts.any? {|p|item.include? p} if PostList===item || PostListPage===item
+        if Hash===item
+          item.each do |k,v|
+            return true if _detectContainsPosts(v,posts)
+          end
+        elsif Array===item
+          item.each do |a|
+            return true if _detectContainsPosts(a,posts)
+          end
+        end
+        return false
     end
 
   end

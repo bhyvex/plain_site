@@ -2,8 +2,8 @@
 module PlainSite;end
 module PlainSite::Data
   require 'pygments'
-  require 'maruku'
-  require 'time'
+  require 'kramdown'
+  require 'date'
   require 'securerandom'
   require 'plain_site/data/front_matter_file'
   require 'plain_site/tpl/lay_erb'
@@ -63,8 +63,24 @@ module PlainSite::Data
     # The Date of post
     def date
       return @date if @date
-      @date=post_file.headers['date'] || Date.today
-      # @date= @date ? DateTime.parse(@date).to_date : Date.today
+      @date=get_date 'date'
+    end
+
+    def get_date(k)
+      date=post_file.headers[k]
+      date=if String===date
+              begin Date.parse(date) rescue Date.today end
+            elsif Date===date
+              date
+            else
+              Date.today
+            end
+    end
+    private :get_date
+
+    def updated_date
+      return @updated_date if @updated_date
+      @updated_date=get_date 'updated_date'
     end
 
     # The Category this post belongs to
@@ -168,7 +184,7 @@ module PlainSite::Data
         code="<code class=\"highlight\">#{code}</code>" if v[:nowrap]
         post_content[k]=code # String#sub method has a hole of back reference
       end
-      @@cache[p]=@content=post_content
+      @@cache[p]=@content=post_content.strip
     end
 
     @@cache={}
@@ -196,7 +212,7 @@ module PlainSite::Data
 
     def self.content_to_html(content,content_type)
       if content_type=='md'
-        content=Maruku.new(content).to_html
+        content=Kramdown::Document.new(content,input:'GFM').to_html
       end
       content
     end

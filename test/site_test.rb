@@ -86,7 +86,7 @@ CONTENT
       end
     end
 
-    site.build(dest:@site_root,all:true,local:true)
+    site.build(dest:@site_root,local:true)
     #puts "\n#{@site_root}\n"
     #site.serve
   end
