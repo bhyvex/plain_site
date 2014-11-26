@@ -19,8 +19,10 @@ layout: base.html
   <ul class="posts-list">
   <% posts.each do |p| %>
     <li>
-      <small><time><%=p.date%></time></small>
+
       <a href="<%=p.url%>"><%=p.title%></a>
+      <small><time><%=p.date%></time></small>
+      <br/>
     </li>
   <% end %>
   </ul>

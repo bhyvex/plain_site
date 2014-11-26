@@ -26,7 +26,7 @@ module PlainSite::Data
     )
 
     DATE_NAME_RE=/^(\d{4})-(\d{1,2})-(\d{1,2})-(.+)$/
-    HIGHLIGHT_RE=/<highlight(\s+([\w+-]+)(\s+linenos(=\d+)?)?\s*)?>(.+?)<\/highlight>/m
+    HIGHLIGHT_RE=/<highlight(\s+[^>]+)?\s*>(.+?)<\/highlight>/m
     MARKDOWN_CODE_RE=/```(.+?)```/m
 
 
@@ -132,6 +132,8 @@ module PlainSite::Data
     #     <highlight ruby linenos>puts 'Hello'</highlight>
     #     Set line number start from 10
     #     <highlight ruby linenos=10>puts 'Hello'</highlight>
+    #     Highlight lines
+    #     <highlight ruby linenos hl_lines=1>puts 'Hello'</highlight>
     #
     #     Highlight html tag options:
     #       linenos - If provide,output will contains line number
@@ -155,12 +157,19 @@ module PlainSite::Data
       codeMap={}
       post_content.gsub! HIGHLIGHT_RE  do
         placeholder='-HIGHLIGHT '+SecureRandom.uuid+' ENDHIGHLIGHT-'
+        attrs=$1
+        attrs=attrs.split " "
+        lexer=attrs.shift || ""
+        attrs=Hash[attrs.map {|v| v.split "="}]
+        attrs["hl_lines"]=(attrs["hl_lines"] || "").split ","
+        code=$2
         codeMap[placeholder]={
-          lexer:$2,
-          linenos: $3 ? 'table' : false ,
-          linenostart: $4 ? $4[1..-1].to_i : 1,
-          code: $5.strip,
-          nowrap:$5["\n"].nil?
+          lexer: lexer,
+          linenos: (attrs.key? "linenos") ? 'table' : false ,
+          linenostart: attrs["linenos"] || 1,
+          hl_lines: attrs["hl_lines"],
+          code: code.strip,
+          nowrap: code["\n"].nil?
         }
         placeholder
       end
@@ -175,10 +184,11 @@ module PlainSite::Data
 
       #put back code
       codeMap.each do |k,v|
-        code=Pygments.highlight v[:code],lexer:v[:lexer],options:{
-            linenos:v[:linenos],
-            linenostart:v[:linenostart],
-            nowrap:v[:nowrap],
+        code=Pygments.highlight v[:code],lexer: v[:lexer],formatter: 'html',options:{
+            linenos: v[:linenos],
+            linenostart: v[:linenostart],
+            nowrap: v[:nowrap],
+            hl_lines: v[:hl_lines],
             startinline: v[:lexer] == 'php'
         }
         code="<code class=\"highlight\">#{code}</code>" if v[:nowrap]
