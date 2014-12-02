@@ -18,7 +18,7 @@ A Simple but Powerful Static Site Generator Inspired by Jekyll and Octopress.
 
 3. Create new post:
   ```
-  plainsite newpost post-slug "Hello,wolrd!This is the title!"
+  plainsite newpost post-slug 'Hello,wolrd!This is the title!'
   ```
 
 4. Preview site,open <http://localhost:1990/> in your web browser.
