@@ -56,6 +56,7 @@ module PlainSite
             else
               item.object_id
             end
+
         { id: id, urlpath: urlpath, item: item,
           template:File.join(@site.templates_path,template),
           build_anyway:build_anyway }
@@ -80,9 +81,10 @@ module PlainSite
         urlpath='index.html'  if urlpath.empty?
         p1=Pathname.new (File.dirname urlpath)
         basename=File.basename urlpath
-        (p1.relative_path_from @current_page_dirpath).to_s+'/'+basename
+        (p1.relative_path_from Pathname.new(@site._cur_page_dir)).to_s+'/'+basename
       else
-        URI.join @site.url,urlpath
+        #URI.join @site.url,urlpath
+        '/' + urlpath
       end
     end
 
@@ -177,7 +179,7 @@ module PlainSite
       urlpath=t[:urlpath]
       template=t[:template]
 
-      @current_page_dirpath=Pathname.new (File.dirname urlpath)
+      @site._cur_page_dir = File.dirname(urlpath) if @site.local
 
       item=Utils::ObjectProxy.new item,{site:@site} # Keep site always accessable
       erb=Tpl::LayErb.new template

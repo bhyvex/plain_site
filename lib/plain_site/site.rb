@@ -25,6 +25,8 @@ module PlainSite
       :templates_path # The String templates directory path
     )
 
+    attr_accessor :_cur_page_dir # global var -_-!
+
     # Params
     # root - The String root path of site,must be an exists path
     def initialize(root)
@@ -37,6 +39,8 @@ module PlainSite
       @assets_path=File.join(@src_path,'assets')
       @config_file= File.join(@src_path,'config.yml')
       @extensions= File.join(@src_path,'extensions')
+
+      @_cur_page_dir = ''
 
       load_extensions
       create_pygments_css
@@ -205,6 +209,10 @@ module PlainSite
         config['url']=origin_url
         if result
           res.body=result
+          res['Content-Type']='text/html'
+          if req.request_method == 'HEAD'
+            res['Content-Length'] = 0
+          end
           next
         end
         static_file=File.join @dest,url

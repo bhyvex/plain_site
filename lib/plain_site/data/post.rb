@@ -148,8 +148,8 @@ module PlainSite::Data
     #
     # Return the String html content
     def content
-      return @content if @content
-      p=@path.to_sym
+      # quick fix,when build local, current path will change
+      p=@path + "::"+ @site._cur_page_dir
       return @@cache[p] if @@cache.key? p
 
       post_content=raw_content.dup
@@ -194,7 +194,7 @@ module PlainSite::Data
         code="<code class=\"highlight\">#{code}</code>" if v[:nowrap]
         post_content[k]=code # String#sub method has a hole of back reference
       end
-      @@cache[p]=@content=post_content.strip
+      @@cache[p] = post_content.strip
     end
 
     @@cache={}
